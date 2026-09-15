@@ -1,6 +1,6 @@
 # Vault Audit AI Companion
 
-Companion v0 is a standalone Node.js service that stores a persistent, read-only mirror of Vault Audit AI semantic state. The same source and build run locally and on a Linux VPS; only environment variables differ.
+Companion is a standalone Node.js service that stores a persistent, read-only mirror of Vault Audit AI semantic state. The same source and build run locally and on a Linux VPS; only environment variables differ.
 
 Companion never opens an Obsidian Vault directory or writes Markdown. Its optional MCP endpoint retrieves the persisted mirror and queues change proposals even while Obsidian is closed. Only the Obsidian plugin can apply a proposal after an explicit human approval click.
 
@@ -15,8 +15,8 @@ Node 24's built-in `node:sqlite` module is used so installation does not compile
 ## Local installation
 
 ```sh
-git clone https://github.com/zinverno/obsidian-ai-hub.git
-cd obsidian-ai-hub/companion
+git clone https://github.com/zinverno/vault-audit-ai-companion.git
+cd vault-audit-ai-companion
 npm ci
 npm run build
 cp .env.example .env
@@ -33,31 +33,32 @@ npm start
 
 Configure the plugin with `http://127.0.0.1:27124`, the same token, explicitly enable Companion, and select **Sync now**. Merely entering an endpoint does not upload data.
 
-## Companion-only sparse checkout
+## Independent development and compatibility
 
-Only `companion/` is needed on a server:
+Companion is optional. [Vault Audit AI](https://github.com/zinverno/vault-audit-AI) works without it; enable it only to retain a server mirror and expose optional MCP retrieval/proposals. This repository builds and tests without Obsidian, a plugin checkout, or a Vault directory.
 
 ```sh
-git clone --filter=blob:none --no-checkout \
-  https://github.com/zinverno/obsidian-ai-hub.git
-cd obsidian-ai-hub
-git sparse-checkout init --cone
-git sparse-checkout set companion
-git checkout main
-cd companion
 npm ci
 npm run typecheck
 npm test
+npm run lint
 npm run build
-cp .env.example .env
-npm start
+npm run smoke:mcp
+npm run audit:mutations
+npm run audit:proposals
 ```
 
-No root `npm install`, plugin build, Obsidian dependency, Vault directory, or source file outside `companion/` is required.
+Plugin HTTP protocol: **v1**, header **`x-companion-protocol-version`**. Keep the deterministic `tests/fixtures/companion-protocol-v1.json` contract compatible with the plugin's copy. MCP's SDK protocol negotiation is independent. Unsupported plugin HTTP versions are rejected. CI validates this repository's wire schemas, proposal rules and hashes against the fixture.
+
+For joint development, clone the plugin beside this repository as `../vault-audit-AI`, install/build both independently, then run `npm run companion:smoke-sibling` in the plugin. The helper uses real HTTP, temporary server data, and synthetic credentials; it can locate this checkout with `VAULT_AUDIT_COMPANION_DIR`. No production code imports sibling files.
+
+Companion previously lived under `companion/` in `zinverno/vault-audit-AI`. The last plugin main commit containing that location before extraction is [1a978e3046a8032db8afbe421c9203d0caedd095](https://github.com/zinverno/vault-audit-AI/tree/1a978e3046a8032db8afbe421c9203d0caedd095/companion). The final pre-removal evidence-branch commit is [28efb449d7b6a0144fdc6f3333b18a8294da4176](https://github.com/zinverno/vault-audit-AI/tree/28efb449d7b6a0144fdc6f3333b18a8294da4176/companion), with the same server tree. Sixteen relevant commits were preserved with `git subtree split`; author/date information is retained, while commit IDs and root paths change. Plugin-only portions of mixed commits and original PR discussions remain in the original repository.
+
+Existing deployments can switch source checkouts without changing protocol, database schema, tokens, or configured data directory. Stop the old process, build this checkout, preserve the existing protected environment configuration and absolute `DATA_DIR`, then start this checkout. If `DATA_DIR` was relative, resolve it against the old working directory first so the new process reuses the intended database. Never run two processes against the same SQLite data directory. Do not copy credentials into Git.
 
 ## Linux VPS
 
-Use the same sparse-checkout, `npm ci`, tests, and build shown above. The recommended production topology keeps Companion on loopback and terminates TLS at a reverse proxy:
+Use the same clone, `npm ci`, tests, and build shown above. The recommended production topology keeps Companion on loopback and terminates TLS at a reverse proxy:
 
 ```text
 Internet -> HTTPS -> Caddy/Nginx -> 127.0.0.1:27124 -> Companion -> SQLite
@@ -86,7 +87,7 @@ DNS must point to the VPS, ports 80/443 must be allowed as required by the rever
 
 Direct non-loopback binding is available only when both `HOST` is non-loopback and `ALLOW_REMOTE_BIND=true`; it is not the recommended reverse-proxy configuration.
 
-An optional systemd unit can run `npm start` with `WorkingDirectory` set to the checked-out `companion` directory and `EnvironmentFile` set to a protected environment file. systemd and Docker are not required.
+An optional systemd unit can run `npm start` with `WorkingDirectory` set to the checked-out repository directory and `EnvironmentFile` set to a protected environment file. systemd and Docker are not required.
 
 ## Configuration
 
@@ -313,7 +314,7 @@ Requests are bounded to 16 MiB, 100 operations per batch, 4 MiB per note, and 10
 
 Qdrant is **optional, disabled by default, and a derived, rebuildable vector-search index**. SQLite remains the authoritative persistent mirror for Markdown, note/chunk identity, text, metadata, stored vectors, semantic descriptor, generation and synchronization. The plugin only talks to Companion and has no Qdrant settings. The MCP tools and `search_vault({ query, limit? })` inputs are unchanged; backend selection is server policy.
 
-Companion uses the official [`@qdrant/js-client-rest`](https://github.com/qdrant/qdrant-js) client, pinned to **1.19.0**, through a narrow adapter. Use Qdrant **1.19.x** with collection metadata support. An incompatible server or collection leaves retrieval on SQLite. All dependencies live in `companion/`; the same build runs locally or on a Linux VPS. Docker is not a Companion runtime requirement.
+Companion uses the official [`@qdrant/js-client-rest`](https://github.com/qdrant/qdrant-js) client, pinned to **1.19.0**, through a narrow adapter. Use Qdrant **1.19.x** with collection metadata support. An incompatible server or collection leaves retrieval on SQLite. All dependencies live in this repository; the same build runs locally or on a Linux VPS. Docker is not a Companion runtime requirement.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
@@ -448,4 +449,4 @@ The plugin fetches proposals manually when the modal opens or Refresh is clicked
 
 Retention runs conservatively on proposal access: pending proposals older than 30 days expire; terminal history is retained for at least 30 days after its last update, then up to 200 old rows are removed per maintenance pass. At most 100 pending/claimed proposals per Vault and 2,000 total rows are accepted. Full queues return PROPOSAL_LIMIT. There is no destructive cleanup MCP tool.
 
-Permanent proposal tests run with the ordinary plugin and Companion test commands. The cross-project Stage 11 mutation probes require a full checkout with both dependency sets installed: `node companion/scripts/proposal-mutation-audit.mjs` from the repository root. They mutate only disposable copies in the OS temporary directory. Companion's regular build, tests, and existing `npm run audit:mutations` remain independent in a Companion-only sparse checkout.
+Permanent server proposal tests run with `npm test`. `npm run audit:proposals` preserves the six server-side Stage 11 mutation probes; the five plugin-side probes run in the plugin repository. Both mutate only disposable copies and verify baseline, killed mutation, and restored success. `npm run audit:mutations` retains the existing MCP/search/security audit. All checks are independent of a plugin checkout.
