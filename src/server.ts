@@ -266,7 +266,7 @@ export async function startCompanion(
       resolve();
     });
   });
-  logger.info("Vault Audit AI Companion started.", {
+  logger.info("Veynrel Companion started.", {
     host: config.host,
     port: config.port,
     protocolVersion: PROTOCOL_VERSION,

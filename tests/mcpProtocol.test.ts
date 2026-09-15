@@ -113,6 +113,9 @@ describe("MCP Streamable HTTP endpoint", () => {
     const client = await connect("modern");
     expect(client.getProtocolEra()).toBe("modern");
     expect(client.getNegotiatedProtocolVersion()).toBe("2026-07-28");
+    expect(client.getServerVersion()).toEqual({
+      name: "vault-audit-ai-companion", title: "Veynrel Companion", version: "0.1.0",
+    });
     const first = await client.listTools();
     const second = await client.listTools();
     expect(first).toEqual(second);
@@ -135,6 +138,9 @@ describe("MCP Streamable HTTP endpoint", () => {
     const client = await connect("legacy");
     expect(client.getProtocolEra()).toBe("legacy");
     expect(client.getNegotiatedProtocolVersion()).toMatch(/^2025-/u);
+    expect(client.getServerVersion()).toEqual({
+      name: "vault-audit-ai-companion", title: "Veynrel Companion", version: "0.1.0",
+    });
     expect((await client.listTools()).tools).toHaveLength(7);
   });
 

@@ -1,8 +1,10 @@
-# Vault Audit AI Companion
+# Veynrel Companion
 
-Companion is a standalone Node.js service that stores a persistent, read-only mirror of Vault Audit AI semantic state. The same source and build run locally and on a Linux VPS; only environment variables differ.
+Veynrel Companion is the optional standalone Node.js service for [Veynrel](https://github.com/zinverno/veynrel). It stores a persistent, read-only mirror of Veynrel semantic state. The same source and build run locally and on a Linux VPS; only environment variables differ.
 
-Companion never opens an Obsidian Vault directory or writes Markdown. Its optional MCP endpoint retrieves the persisted mirror and queues change proposals even while Obsidian is closed. Only the Obsidian plugin can apply a proposal after an explicit human approval click.
+Companion never opens an Obsidian Vault directory or writes Markdown. Its optional MCP endpoint retrieves the persisted mirror and queues change proposals even while Obsidian is closed. **Obsidian is the only writer to the Vault** in this architecture. Only the Obsidian plugin can apply a proposal after an explicit human approval click.
+
+The rebrand requires no environment variable, token, database, protocol, or MCP configuration migration and no Vault resync. Existing deployment settings remain valid. See the [identifier inventory and repository rename checklist](REBRANDING.md).
 
 ## Requirements
 
@@ -13,6 +15,8 @@ Companion never opens an Obsidian Vault directory or writes Markdown. Its option
 Node 24's built-in `node:sqlite` module is used so installation does not compile or download a native database addon. Node 24 currently labels this API experimental, so operators should stay on a supported Node 24 LTS patch release and review Node release notes before a major upgrade.
 
 ## Local installation
+
+The current repository is `zinverno/vault-audit-ai-companion`. Its rename to `zinverno/veynrel-companion` is planned separately after the branding PR merges; use the current clone URL until then.
 
 ```sh
 git clone https://github.com/zinverno/vault-audit-ai-companion.git
@@ -35,7 +39,7 @@ Configure the plugin with `http://127.0.0.1:27124`, the same token, explicitly e
 
 ## Independent development and compatibility
 
-Companion is optional. [Vault Audit AI](https://github.com/zinverno/vault-audit-AI) works without it; enable it only to retain a server mirror and expose optional MCP retrieval/proposals. This repository builds and tests without Obsidian, a plugin checkout, or a Vault directory.
+Companion is optional. [Veynrel](https://github.com/zinverno/veynrel) works without it; enable it only to retain a server mirror and expose optional MCP retrieval/proposals. This repository builds and tests without Obsidian, a plugin checkout, or a Vault directory.
 
 ```sh
 npm ci
@@ -50,9 +54,11 @@ npm run audit:proposals
 
 Plugin HTTP protocol: **v1**, header **`x-companion-protocol-version`**. Keep the deterministic `tests/fixtures/companion-protocol-v1.json` contract compatible with the plugin's copy. MCP's SDK protocol negotiation is independent. Unsupported plugin HTTP versions are rejected. CI validates this repository's wire schemas, proposal rules and hashes against the fixture.
 
-For joint development, clone the plugin beside this repository as `../vault-audit-AI`, install/build both independently, then run `npm run companion:smoke-sibling` in the plugin. The helper uses real HTTP, temporary server data, and synthetic credentials; it can locate this checkout with `VAULT_AUDIT_COMPANION_DIR`. No production code imports sibling files.
+For joint development, clone [the plugin](https://github.com/zinverno/veynrel) beside this repository as `../veynrel`, install/build both independently, then run `npm run companion:smoke-sibling` in the plugin. The helper uses real HTTP, temporary server data, and synthetic credentials; it can locate this checkout with the unchanged `VAULT_AUDIT_COMPANION_DIR` variable. No production code imports sibling files.
 
-Companion previously lived under `companion/` in `zinverno/vault-audit-AI`. The last plugin main commit containing that location before extraction is [1a978e3046a8032db8afbe421c9203d0caedd095](https://github.com/zinverno/vault-audit-AI/tree/1a978e3046a8032db8afbe421c9203d0caedd095/companion). The final pre-removal evidence-branch commit is [28efb449d7b6a0144fdc6f3333b18a8294da4176](https://github.com/zinverno/vault-audit-AI/tree/28efb449d7b6a0144fdc6f3333b18a8294da4176/companion), with the same server tree. Sixteen relevant commits were preserved with `git subtree split`; author/date information is retained, while commit IDs and root paths change. Plugin-only portions of mixed commits and original PR discussions remain in the original repository.
+### Extraction history
+
+Historically named **Vault Audit AI Companion**, the service previously lived under `companion/` in `zinverno/vault-audit-AI` (the plugin is now **Veynrel**, at `zinverno/veynrel`). The last plugin main commit containing that location before extraction is [1a978e3046a8032db8afbe421c9203d0caedd095](https://github.com/zinverno/veynrel/tree/1a978e3046a8032db8afbe421c9203d0caedd095/companion). The final pre-removal evidence-branch commit is [28efb449d7b6a0144fdc6f3333b18a8294da4176](https://github.com/zinverno/veynrel/tree/28efb449d7b6a0144fdc6f3333b18a8294da4176/companion), with the same server tree. These are historical snapshots, linked through the canonical plugin repository. Sixteen relevant commits were preserved with `git subtree split`; author/date information is retained, while commit IDs and root paths change. Plugin-only portions of mixed commits and original PR discussions remain in the plugin repository.
 
 Existing deployments can switch source checkouts without changing protocol, database schema, tokens, or configured data directory. Stop the old process, build this checkout, preserve the existing protected environment configuration and absolute `DATA_DIR`, then start this checkout. If `DATA_DIR` was relative, resolve it against the old working directory first so the new process reuses the intended database. Never run two processes against the same SQLite data directory. Do not copy credentials into Git.
 
@@ -163,6 +169,8 @@ Each non-empty search calls `QueryEmbeddingProvider.embedQuery` **once**, sendin
 Search validates the canonical descriptor identity, supported provider, dimensions, finite Float32 values, and nonzero query norm. If the provider reports a model, it must match exactly, with one narrow OpenRouter exception: remove at most one leading `private/openrouter/` from the reported name and allow a terminal `:free` on the requested name to be absent in the response; the underlying identifier must still match exactly. No other namespaces, suffixes, case changes, or different models are accepted. Requests and the persisted descriptor/embedding-space ID retain the original configured model; no reindex is needed. Stored vectors must be unit-normalized within `1e-4`. The query is normalized into Float32 and dot products are clamped to `[-1, 1]`, matching the plugin's cosine semantics. Scores sort descending, with chunk ID ascending as the stable tie-break. The SQLite scan retains only top K vectors and reads winner text afterwards. A descriptor/generation change during the query request rejects the search rather than comparing incompatible spaces. With Qdrant disabled, retrieval uses the permanent SQLite linear scan. Optional Qdrant acceleration uses the same query vector and hydrates every winner from SQLite; see below.
 
 ### Client configuration
+
+Existing `vault_audit` client keys and `VAULT_AUDIT_MCP_TOKEN` environment variables remain valid and are intentionally retained below. MCP advertises the display title **Veynrel Companion** while preserving its technical server name `vault-audit-ai-companion` and version `0.1.0`; no MCP reconfiguration is required.
 
 **Codex CLI:** tested with **0.153.0** against this endpoint, including all five tools. In a personal `config.toml`, use the read token from the client process environment:
 
