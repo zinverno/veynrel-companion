@@ -16,11 +16,11 @@ Node 24's built-in `node:sqlite` module is used so installation does not compile
 
 ## Local installation
 
-The current repository is `zinverno/vault-audit-ai-companion`. Its rename to `zinverno/veynrel-companion` is planned separately after the branding PR merges; use the current clone URL until then.
+The canonical repository is [zinverno/veynrel-companion](https://github.com/zinverno/veynrel-companion).
 
 ```sh
-git clone https://github.com/zinverno/vault-audit-ai-companion.git
-cd vault-audit-ai-companion
+git clone https://github.com/zinverno/veynrel-companion.git
+cd veynrel-companion
 npm ci
 npm run build
 cp .env.example .env
