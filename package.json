@@ -1,9 +1,9 @@
 {
-  "name": "vault-audit-ai-companion",
+  "name": "veynrel-companion",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Standalone persistent semantic mirror for Vault Audit AI",
+  "description": "Veynrel Companion: optional standalone persistent semantic mirror for Veynrel",
   "engines": {
     "node": ">=24.0.0"
   },

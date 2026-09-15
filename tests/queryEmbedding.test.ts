@@ -33,6 +33,12 @@ describe("Companion query embedding provider", () => {
     expect(Array.from(await provider.embedQuery(value, "query only"))).toEqual([1, 2, 3]);
     expect(performFetch).toHaveBeenCalledTimes(1);
     expect(performFetch.mock.calls[0]?.[0]).toBe("https://openrouter.ai/api/v1/embeddings");
+    expect(performFetch.mock.calls[0]?.[1]?.headers).toEqual({
+      "content-type": "application/json",
+      authorization: "Bearer provider-secret",
+      "http-referer": "https://obsidian.md",
+      "x-title": "Veynrel Companion",
+    });
     expect(JSON.parse(performFetch.mock.calls[0]?.[1]?.body as string)).toEqual({
       model: requested, input: ["query only"], encoding_format: "float",
     });

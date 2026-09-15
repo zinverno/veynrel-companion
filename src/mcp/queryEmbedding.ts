@@ -86,7 +86,7 @@ export class DescriptorQueryEmbeddingProvider implements QueryEmbeddingProvider 
     if (this.apiKey && !ollama) headers.authorization = `Bearer ${this.apiKey}`;
     if (descriptor.providerId === "openrouter") {
       headers["http-referer"] = "https://obsidian.md";
-      headers["x-title"] = "Vault Audit AI Companion";
+      headers["x-title"] = "Veynrel Companion";
     }
     const body = ollama
       ? { model: descriptor.model, input: [query] }

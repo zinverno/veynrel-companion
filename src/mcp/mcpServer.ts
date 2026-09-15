@@ -122,7 +122,8 @@ export function createVaultMcpServer(
   proposals?: McpProposalCapability,
 ): McpServer {
   const service = new VaultMcpService(storage, config.vaultId, new SemanticSearchService(storage, provider, backend));
-  const server = new McpServer({ name: "vault-audit-ai-companion", version: "0.1.0" }, {
+  // Preserve the advertised technical identity for existing MCP clients.
+  const server = new McpServer({ name: "vault-audit-ai-companion", title: "Veynrel Companion", version: "0.1.0" }, {
     capabilities: { tools: { listChanged: false } },
   });
 
